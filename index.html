@@ -73,20 +73,19 @@
 
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-  function isHoliday(date) {
-    const d = date.getDate();
-    const m = date.getMonth() + 1;
-    if ((m === 1 && d === 1) ||
-        (m === 4 && d === 21) ||
-        (m === 5 && d === 1) ||
-        (m === 9 && d === 7) ||
-        (m === 10 && d === 12) ||
-        (m === 11 && d === 2) ||
-        (m === 11 && d === 15) ||
-        (m === 12 && d === 25)) {
-      return true;
-    }
-    return false;
+  function isHoliday(day, month) {
+    // Feriados fixos nacionais (dia e mês 1-12)
+    const fixed = [
+      {d: 1, m: 1},   // Confraternização Universal
+      {d: 21, m: 4},  // Tiradentes
+      {d: 1, m: 5},   // Dia do Trabalho
+      {d: 7, m: 9},   // Independência
+      {d: 12, m: 10}, // N. Sra. Aparecida
+      {d: 2, m: 11},  // Finados
+      {d: 15, m: 11}, // Proclamação da República
+      {d: 25, m: 12}  // Natal
+    ];
+    return fixed.some(h => h.d === day && h.m === month);
   }
 
   function renderSingleMonth(targetYear, targetMonth, referenceStartDate, cycle) {
@@ -123,9 +122,9 @@
       dayDiv.className = 'day';
       dayDiv.innerText = d;
 
-      // Cálculo preciso da diferença em dias a partir da data de início oficial da escala
+      // Diferença em dias exata usando milissegundos
       const diffTime = currentDate.getTime() - referenceStartDate.getTime();
-      const absoluteDayIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const absoluteDayIndex = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       let status = 'folga';
       if (cycle === '12x36') {
@@ -138,7 +137,7 @@
         status = (mod === 5 || mod === 6) ? 'folga' : 'trabalho';
       }
 
-      if (isHoliday(currentDate)) {
+      if (isHoliday(d, targetMonth + 1)) {
         dayDiv.classList.add('feriado');
       } else {
         dayDiv.classList.add(status);
@@ -153,37 +152,38 @@
   function generateCalendar() {
     calendarContainer.innerHTML = '';
     const startDateVal = startDateInput.value;
-    if (!startDateVal) return;
+    if (!startDateVal) {
+      alert("Por favor, selecione a data do primeiro dia de trabalho.");
+      return;
+    }
 
-    const startDate = new Date(startDateVal + 'T00:00:00');
+    // Corrige a leitura da data para evitar erro de fuso horário
+    const parts = startDateVal.split('-');
+    const referenceStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
     const cycle = cycleSelect.value;
     const viewMode = viewModeSelect.value;
 
-    const baseYear = startDate.getFullYear();
-    const baseMonth = startDate.getMonth();
+    const baseYear = referenceStartDate.getFullYear();
+    const baseMonth = referenceStartDate.getMonth();
 
     if (viewMode === '1') {
-      renderSingleMonth(baseYear, baseMonth, startDate, cycle);
+      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
     } else if (viewMode === '3') {
-      let prevYear = baseYear;
       let prevMonth = baseMonth - 1;
+      let prevYear = baseYear;
       if (prevMonth < 0) { prevMonth = 11; prevYear--; }
 
-      let currYear = baseYear;
-      let currMonth = baseMonth;
-
-      let nextYear = baseYear;
       let nextMonth = baseMonth + 1;
+      let nextYear = baseYear;
       if (nextMonth > 11) { nextMonth = 0; nextYear++; }
 
-      renderSingleMonth(prevYear, prevMonth, startDate, cycle);
-      renderSingleMonth(currYear, currMonth, startDate, cycle);
-      renderSingleMonth(nextYear, nextMonth, startDate, cycle);
+      renderSingleMonth(prevYear, prevMonth, referenceStartDate, cycle);
+      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
+      renderSingleMonth(nextYear, nextMonth, referenceStartDate, cycle);
     } else if (viewMode === 'yearAgo') {
-      // 1. Renderiza o mesmo mês do ano passado em cima
-      renderSingleMonth(baseYear - 1, baseMonth, startDate, cycle);
-      // 2. Renderiza o mês atual deste ano embaixo
-      renderSingleMonth(baseYear, baseMonth, startDate, cycle);
+      renderSingleMonth(baseYear - 1, baseMonth, referenceStartDate, cycle);
+      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
     }
   }
 
