@@ -13,16 +13,17 @@
     input[type="date"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 4px; }
     button { background-color: #3182ce; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; }
     button:hover { background-color: #2b6cb0; }
-    .legend { display: flex; justify-content: space-around; margin: 20px 0 10px; font-size: 14px; }
+    .legend { display: flex; justify-content: space-around; margin: 20px 0 10px; font-size: 14px; flex-wrap: wrap; gap: 10px; }
     .legend-item { display: flex; align-items: center; gap: 5px; }
     .box { width: 14px; height: 14px; border-radius: 3px; }
     .box.trabalho { background-color: #3182ce; }
-    .box.folga { background-color: #38a169; }
+    .box.folga { background-color: #c6f6d5; }
+    .box.feriado { background-color: #fed7d7; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; }
     .day-header { font-weight: bold; font-size: 12px; color: #718096; text-align: center; padding: 5px 0; }
     .day { padding: 10px 2px; border-radius: 6px; font-size: 14px; font-weight: 600; text-align: center; min-height: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .day.trabalho { background-color: #3182ce; color: #9b2c2c; border: 1fr solid #feb2b2; }
-    .day.folga { background-color: #c6f6d5; color: #22543d; border: 1fr solid #9ae6b4; }
+    .day.trabalho { background-color: #3182ce; color: #fff; }
+    .day.folga { background-color: #c6f6d5; color: #22543d; }
     .day.feriado { background-color: #fed7d7; color: #9b2c2c; }
     .day.empty { background-color: transparent; }
   </style>
@@ -35,9 +36,11 @@
     <input type="date" id="startDate">
   </div>
   <div class="form-group">
-    <label for="cycle">Ciclo de Escala:</label>
+    <label for="cycle">Tipo de Escala:</label>
     <select id="cycle">
       <option value="12x36">12x36 (1 Trab / 1 Folga)</option>
+      <option value="6x1">6x1 (6 Trab / 1 Folga)</option>
+      <option value="5x2">5x2 (5 Trab / 2 Folga)</option>
     </select>
   </div>
   <button id="generate">Gerar Escala</button>
@@ -45,18 +48,19 @@
   <div class="legend">
     <div class="legend-item"><div class="box trabalho"></div> Trabalho</div>
     <div class="legend-item"><div class="box folga"></div> Folga</div>
+    <div class="legend-item"><div class="box feriado"></div> Feriado</div>
   </div>
 
   <div id="calendar" class="calendar-grid"></div>
 </div>
 
 <script>
-  // Script original mantido para funcionamento do calendário
   const startDateInput = document.getElementById('startDate');
+  const cycleSelect = document.getElementById('cycle');
   const generateBtn = document.getElementById('generate');
   const calendarDiv = document.getElementById('calendar');
 
-  function renderCalendar() {
+  function generateCalendar() {
     calendarDiv.innerHTML = '';
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     weekdays.forEach(day => {
@@ -65,10 +69,39 @@
       header.innerText = day;
       calendarDiv.appendChild(header);
     });
+
+    const startDateVal = startDateInput.value;
+    if (!startDateVal) return;
+
+    const startDate = new Date(startDateVal + 'T00:00:00');
+    const cycle = cycleSelect.value;
+
+    // Gerar um período base (ex: 60 dias a partir da data)
+    const totalDays = 60;
+    for (let i = 0; i < totalDays; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'day';
+      dayDiv.innerText = currentDate.getDate();
+
+      let status = 'folga';
+      if (cycle === '12x36') {
+        status = (i % 2 === 0) ? 'trabalho' : 'folga';
+      } else if (cycle === '6x1') {
+        status = (i % 7 === 6) ? 'folga' : 'trabalho';
+      } else if (cycle === '5x2') {
+        let mod = i % 7;
+        status = (mod === 5 || mod === 6) ? 'folga' : 'trabalho';
+      }
+
+      dayDiv.classList.add(status);
+      calendarDiv.appendChild(dayDiv);
+    }
   }
 
-  generateBtn.addEventListener('click', renderCalendar);
-  renderCalendar();
+  generateBtn.addEventListener('click', generateCalendar);
 </script>
 </body>
 </html>
