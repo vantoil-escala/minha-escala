@@ -5,23 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Minha Escala</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background-color: #f7fafc; color: #2d3748; line-height: 1.15; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    h1 { font-size: 20px; text-align: center; color: #2b6cb0; margin-bottom: 20px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
-    input[type="date"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 4px; }
-    button { background-color: #3182ce; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background-color: #f7fafc; color: #2d3748; line-height: 1.15; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { font-size: 18px; text-align: center; color: #2b6cb0; margin-bottom: 15px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+    input[type="date"], select { width: 100%; padding: 7px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; }
+    button { background-color: #3182ce; color: white; border: none; padding: 9px; width: 100%; border-radius: 4px; font-size: 15px; cursor: pointer; }
     button:hover { background-color: #2b6cb0; }
-    .legend { display: flex; justify-content: space-around; margin: 20px 0 10px; font-size: 14px; flex-wrap: wrap; gap: 10px; }
-    .legend-item { display: flex; align-items: center; gap: 5px; }
-    .box { width: 14px; height: 14px; border-radius: 3px; }
+    .legend { display: flex; justify-content: space-around; margin: 15px 0 8px; font-size: 13px; flex-wrap: wrap; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .box { width: 12px; height: 12px; border-radius: 3px; }
     .box.trabalho { background-color: #3182ce; }
     .box.folga { background-color: #c6f6d5; }
     .box.feriado { background-color: #fed7d7; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; }
-    .day-header { font-weight: bold; font-size: 12px; color: #718096; text-align: center; padding: 5px 0; }
-    .day { padding: 10px 2px; border-radius: 6px; font-size: 14px; font-weight: 600; text-align: center; min-height: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    
+    .month-title { font-size: 15px; font-weight: bold; color: #2b6cb0; margin: 20px 0 6px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 5px; }
+    .day-header { font-weight: bold; font-size: 11px; color: #718096; text-align: center; padding: 3px 0; }
+    .day { padding: 6px 2px; border-radius: 4px; font-size: 13px; font-weight: 600; text-align: center; min-height: 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     .day.trabalho { background-color: #3182ce; color: #fff; }
     .day.folga { background-color: #c6f6d5; color: #22543d; }
     .day.feriado { background-color: #fed7d7; color: #9b2c2c; }
@@ -43,6 +45,14 @@
       <option value="5x2">5x2 (5 Trab / 2 Folga)</option>
     </select>
   </div>
+  <div class="form-group">
+    <label for="viewMode">Visualização do Período:</label>
+    <select id="viewMode">
+      <option value="1">Apenas 1 Mês (Mês Escolhido)</option>
+      <option value="3">3 Meses (Anterior + Atual + Futuro)</option>
+      <option value="yearAgo">Comparar Ano Passado (Mês Atual vs. Ano Passado)</option>
+    </select>
+  </div>
   <button id="generate">Gerar Escala</button>
 
   <div class="legend">
@@ -51,53 +61,130 @@
     <div class="legend-item"><div class="box feriado"></div> Feriado</div>
   </div>
 
-  <div id="calendar" class="calendar-grid"></div>
+  <div id="calendar-container"></div>
 </div>
 
 <script>
   const startDateInput = document.getElementById('startDate');
   const cycleSelect = document.getElementById('cycle');
+  const viewModeSelect = document.getElementById('viewMode');
   const generateBtn = document.getElementById('generate');
-  const calendarDiv = document.getElementById('calendar');
+  const calendarContainer = document.getElementById('calendarContainer');
 
-  function generateCalendar() {
-    calendarDiv.innerHTML = '';
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+  function isHoliday(date) {
+    const d = date.getDate();
+    const m = date.getMonth() + 1;
+    if ((m === 1 && d === 1) ||
+        (m === 4 && d === 21) ||
+        (m === 5 && d === 1) ||
+        (m === 9 && d === 7) ||
+        (m === 10 && d === 12) ||
+        (m === 11 && d === 2) ||
+        (m === 11 && d === 15) ||
+        (m === 12 && d === 25)) {
+      return true;
+    }
+    return false;
+  }
+
+  function renderSingleMonth(targetYear, targetMonth, startDate, cycle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'month-title';
+    titleDiv.innerText = `${monthNames[targetMonth]} de ${targetYear}`;
+    calendarContainer.appendChild(titleDiv);
+
+    const gridDiv = document.createElement('div');
+    gridDiv.className = 'calendar-grid';
+
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     weekdays.forEach(day => {
       const header = document.createElement('div');
       header.className = 'day-header';
       header.innerText = day;
-      calendarDiv.appendChild(header);
+      gridDiv.appendChild(header);
     });
 
+    const firstDayOfMonth = new Date(targetYear, targetMonth, 1);
+    const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0);
+    const startingDayOfWeek = firstDayOfMonth.getDay();
+
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'day empty';
+      gridDiv.appendChild(emptyDiv);
+    }
+
+    const diffTime = firstDayOfMonth.getTime() - startDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    const totalDaysInMonth = lastDayOfMonth.getDate();
+    for (let d = 1; d <= totalDaysInMonth; d++) {
+      const currentDate = new Date(targetYear, targetMonth, d);
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'day';
+      dayDiv.innerText = d;
+
+      const absoluteDayIndex = diffDays + (d - 1);
+
+      let status = 'folga';
+      if (cycle === '12x36') {
+        status = (absoluteDayIndex % 2 === 0) ? 'trabalho' : 'folga';
+      } else if (cycle === '6x1') {
+        let mod = ((absoluteDayIndex % 7) + 7) % 7;
+        status = (mod === 6) ? 'folga' : 'trabalho';
+      } else if (cycle === '5x2') {
+        let mod = ((absoluteDayIndex % 7) + 7) % 7;
+        status = (mod === 5 || mod === 6) ? 'folga' : 'trabalho';
+      }
+
+      if (isHoliday(currentDate)) {
+        dayDiv.classList.add('feriado');
+      } else {
+        dayDiv.classList.add(status);
+      }
+
+      gridDiv.appendChild(dayDiv);
+    }
+
+    calendarContainer.appendChild(gridDiv);
+  }
+
+  function generateCalendar() {
+    calendarContainer.innerHTML = '';
     const startDateVal = startDateInput.value;
     if (!startDateVal) return;
 
     const startDate = new Date(startDateVal + 'T00:00:00');
     const cycle = cycleSelect.value;
+    const viewMode = viewModeSelect.value;
 
-    // Gerar um período base (ex: 60 dias a partir da data)
-    const totalDays = 60;
-    for (let i = 0; i < totalDays; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
+    const baseYear = startDate.getFullYear();
+    const baseMonth = startDate.getMonth();
 
-      const dayDiv = document.createElement('div');
-      dayDiv.className = 'day';
-      dayDiv.innerText = currentDate.getDate();
+    if (viewMode === '1') {
+      renderSingleMonth(baseYear, baseMonth, startDate, cycle);
+    } else if (viewMode === '3') {
+      let prevYear = baseYear;
+      let prevMonth = baseMonth - 1;
+      if (prevMonth < 0) { prevMonth = 11; prevYear--; }
 
-      let status = 'folga';
-      if (cycle === '12x36') {
-        status = (i % 2 === 0) ? 'trabalho' : 'folga';
-      } else if (cycle === '6x1') {
-        status = (i % 7 === 6) ? 'folga' : 'trabalho';
-      } else if (cycle === '5x2') {
-        let mod = i % 7;
-        status = (mod === 5 || mod === 6) ? 'folga' : 'trabalho';
-      }
+      let currYear = baseYear;
+      let currMonth = baseMonth;
 
-      dayDiv.classList.add(status);
-      calendarDiv.appendChild(dayDiv);
+      let nextYear = baseYear;
+      let nextMonth = baseMonth + 1;
+      if (nextMonth > 11) { nextMonth = 0; nextYear++; }
+
+      renderSingleMonth(prevYear, prevMonth, startDate, cycle);
+      renderSingleMonth(currYear, currMonth, startDate, cycle);
+      renderSingleMonth(nextYear, nextMonth, startDate, cycle);
+    } else if (viewMode === 'yearAgo') {
+      // 1. Renderiza o mesmo mês do ano passado em cima
+      renderSingleMonth(baseYear - 1, baseMonth, startDate, cycle);
+      // 2. Renderiza o mês atual deste ano embaixo
+      renderSingleMonth(baseYear, baseMonth, startDate, cycle);
     }
   }
 
