@@ -89,7 +89,7 @@
     return false;
   }
 
-  function renderSingleMonth(targetYear, targetMonth, startDate, cycle) {
+  function renderSingleMonth(targetYear, targetMonth, referenceStartDate, cycle) {
     const titleDiv = document.createElement('div');
     titleDiv.className = 'month-title';
     titleDiv.innerText = `${monthNames[targetMonth]} de ${targetYear}`;
@@ -116,9 +116,6 @@
       gridDiv.appendChild(emptyDiv);
     }
 
-    const diffTime = firstDayOfMonth.getTime() - startDate.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
     const totalDaysInMonth = lastDayOfMonth.getDate();
     for (let d = 1; d <= totalDaysInMonth; d++) {
       const currentDate = new Date(targetYear, targetMonth, d);
@@ -126,7 +123,9 @@
       dayDiv.className = 'day';
       dayDiv.innerText = d;
 
-      const absoluteDayIndex = diffDays + (d - 1);
+      // Cálculo preciso da diferença em dias a partir da data de início oficial da escala
+      const diffTime = currentDate.getTime() - referenceStartDate.getTime();
+      const absoluteDayIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       let status = 'folga';
       if (cycle === '12x36') {
