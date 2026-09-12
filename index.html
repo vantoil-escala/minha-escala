@@ -53,7 +53,7 @@
       <option value="yearAgo">Comparar Ano Passado (Mês Atual vs. Ano Passado)</option>
     </select>
   </div>
-  <button id="generate">Gerar Escala</button>
+  <button id="generate" onclick="generateCalendar()">Gerar Escala</button>
 
   <div class="legend">
     <div class="legend-item"><div class="box trabalho"></div> Trabalho</div>
@@ -65,34 +65,23 @@
 </div>
 
 <script>
-  const startDateInput = document.getElementById('startDate');
-  const cycleSelect = document.getElementById('cycle');
-  const viewModeSelect = document.getElementById('viewMode');
-  const generateBtn = document.getElementById('generate');
-  const calendarContainer = document.getElementById('calendarContainer');
-
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   function isHoliday(day, month) {
-    // Feriados fixos nacionais (dia e mês 1-12)
     const fixed = [
-      {d: 1, m: 1},   // Confraternização Universal
-      {d: 21, m: 4},  // Tiradentes
-      {d: 1, m: 5},   // Dia do Trabalho
-      {d: 7, m: 9},   // Independência
-      {d: 12, m: 10}, // N. Sra. Aparecida
-      {d: 2, m: 11},  // Finados
-      {d: 15, m: 11}, // Proclamação da República
-      {d: 25, m: 12}  // Natal
+      {d: 1, m: 1}, {d: 21, m: 4}, {d: 1, m: 5}, {d: 7, m: 9},
+      {d: 12, m: 10}, {d: 2, m: 11}, {d: 15, m: 11}, {d: 25, m: 12}
     ];
     return fixed.some(h => h.d === day && h.m === month);
   }
 
   function renderSingleMonth(targetYear, targetMonth, referenceStartDate, cycle) {
+    const container = document.getElementById('calendar-container');
+
     const titleDiv = document.createElement('div');
     titleDiv.className = 'month-title';
-    titleDiv.innerText = `${monthNames[targetMonth]} de ${targetYear}`;
-    calendarContainer.appendChild(titleDiv);
+    titleDiv.innerText = monthNames[targetMonth] + ' de ' + targetYear;
+    container.appendChild(titleDiv);
 
     const gridDiv = document.createElement('div');
     gridDiv.className = 'calendar-grid';
@@ -122,7 +111,6 @@
       dayDiv.className = 'day';
       dayDiv.innerText = d;
 
-      // Diferença em dias exata usando milissegundos
       const diffTime = currentDate.getTime() - referenceStartDate.getTime();
       const absoluteDayIndex = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -146,23 +134,24 @@
       gridDiv.appendChild(dayDiv);
     }
 
-    calendarContainer.appendChild(gridDiv);
+    container.appendChild(gridDiv);
   }
 
   function generateCalendar() {
-    calendarContainer.innerHTML = '';
-    const startDateVal = startDateInput.value;
+    const container = document.getElementById('calendar-container');
+    container.innerHTML = '';
+
+    const startDateVal = document.getElementById('startDate').value;
     if (!startDateVal) {
-      alert("Por favor, selecione a data do primeiro dia de trabalho.");
+      alert("Selecione a data do primeiro dia de trabalho!");
       return;
     }
 
-    // Corrige a leitura da data para evitar erro de fuso horário
     const parts = startDateVal.split('-');
     const referenceStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    const cycle = cycleSelect.value;
-    const viewMode = viewModeSelect.value;
+    const cycle = document.getElementById('cycle').value;
+    const viewMode = document.getElementById('viewMode').value;
 
     const baseYear = referenceStartDate.getFullYear();
     const baseMonth = referenceStartDate.getMonth();
@@ -186,8 +175,6 @@
       renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
     }
   }
-
-  generateBtn.addEventListener('click', generateCalendar);
 </script>
 </body>
 </html>
