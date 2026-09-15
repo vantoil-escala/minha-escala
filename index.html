@@ -1,180 +1,203 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minha Escala</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background-color: #f7fafc; color: #2d3748; line-height: 1.15; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    h1 { font-size: 18px; text-align: center; color: #2b6cb0; margin-bottom: 15px; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-    input[type="date"], select { width: 100%; padding: 7px; box-sizing: border-box; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; }
-    button { background-color: #3182ce; color: white; border: none; padding: 9px; width: 100%; border-radius: 4px; font-size: 15px; cursor: pointer; }
-    button:hover { background-color: #2b6cb0; }
-    .legend { display: flex; justify-content: space-around; margin: 15px 0 8px; font-size: 13px; flex-wrap: wrap; gap: 8px; }
-    .legend-item { display: flex; align-items: center; gap: 4px; }
-    .box { width: 12px; height: 12px; border-radius: 3px; }
-    .box.trabalho { background-color: #3182ce; }
-    .box.folga { background-color: #c6f6d5; }
-    .box.feriado { background-color: #fed7d7; }
-    
-    .month-title { font-size: 15px; font-weight: bold; color: #2b6cb0; margin: 20px 0 6px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 5px; }
-    .day-header { font-weight: bold; font-size: 11px; color: #718096; text-align: center; padding: 3px 0; }
-    .day { padding: 6px 2px; border-radius: 4px; font-size: 13px; font-weight: 600; text-align: center; min-height: 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .day.trabalho { background-color: #3182ce; color: #fff; }
-    .day.folga { background-color: #c6f6d5; color: #22543d; }
-    .day.feriado { background-color: #fed7d7; color: #9b2c2c; }
-    .day.empty { background-color: transparent; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinhaEscala</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 10px;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        button, select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #e2e8f0;
+        }
+        .view-container {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #1e293b;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #64748b;
+            padding: 4px 0;
+        }
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .day.empty {
+            background-color: transparent;
+            border: none;
+            cursor: default;
+        }
+        /* Cor de marcação amarela para folga trabalhada / troca */
+        .day.highlighted {
+            background-color: #facc15 !important;
+            color: #713f12;
+            font-weight: bold;
+            border-caixa: #eab308;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-  <h1>📅 Minha Escala</h1>
-  <div class="form-group">
-    <label for="startDate">Data do Primeiro Dia de Trabalho:</label>
-    <input type="date" id="startDate">
-  </div>
-  <div class="form-group">
-    <label for="cycle">Tipo de Escala:</label>
-    <select id="cycle">
-      <option value="12x36">12x36 (1 Trab / 1 Folga)</option>
-      <option value="6x1">6x1 (6 Trab / 1 Folga)</option>
-      <option value="5x2">5x2 (5 Trab / 2 Folga)</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label for="viewMode">Visualização do Período:</label>
-    <select id="viewMode">
-      <option value="1">Apenas 1 Mês (Mês Escolhido)</option>
-      <option value="3">3 Meses (Anterior + Atual + Futuro)</option>
-      <option value="yearAgo">Comparar Ano Passado (Mês Atual vs. Ano Passado)</option>
-    </select>
-  </div>
-  <button id="generate" onclick="generateCalendar()">Gerar Escala</button>
 
-  <div class="legend">
-    <div class="legend-item"><div class="box trabalho"></div> Trabalho</div>
-    <div class="legend-item"><div class="box folga"></div> Folga</div>
-    <div class="legend-item"><div class="box feriado"></div> Feriado</div>
-  </div>
+    <div class="controls">
+        <button onclick="setView('month')">Mês Atual</button>
+        <button onclick="setView('6months')">Próximos 6 Meses</button>
+        <button onclick="setView('year')">Ano Todo (2026)</button>
+    </div>
 
-  <div id="calendar-container"></div>
-</div>
+    <div id="app" class="view-container"></div>
 
-<script>
-  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    <script>
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
+        
+        let currentView = 'month';
+        let now = new Date();
+        let displayYear = now.getFullYear();
+        let displayMonth = now.getMonth();
 
-  function isHoliday(day, month) {
-    const fixed = [
-      {d: 1, m: 1}, {d: 21, m: 4}, {d: 1, m: 5}, {d: 7, m: 9},
-      {d: 12, m: 10}, {d: 2, m: 11}, {d: 15, m: 11}, {d: 25, m: 12}
-    ];
-    return fixed.some(h => h.d === day && h.m === month);
-  }
+        // Carrega dias marcados do armazenamento local do dispositivo
+        function getSavedMarks() {
+            let marks = localStorage.getItem('minhaescala_marks');
+            return marks ? JSON.parse(marks) : {};
+        }
 
-  function renderSingleMonth(targetYear, targetMonth, referenceStartDate, cycle) {
-    const container = document.getElementById('calendar-container');
+        function toggleDay(dateKey) {
+            let marks = getSavedMarks();
+            if (marks[dateKey]) {
+                delete marks[dateKey]; // Remove se já estiver marcado (desfaz)
+            } else {
+                marks[dateKey] = true; // Marca de amarelo
+            }
+            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
+            renderCalendar();
+        }
 
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'month-title';
-    titleDiv.innerText = monthNames[targetMonth] + ' de ' + targetYear;
-    container.appendChild(titleDiv);
+        function setView(viewType) {
+            currentView = viewType;
+            renderCalendar();
+        }
 
-    const gridDiv = document.createElement('div');
-    gridDiv.className = 'calendar-grid';
+        function renderCalendar() {
+            const container = document.getElementById('app');
+            container.innerHTML = '';
+            let marks = getSavedMarks();
 
-    const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    weekdays.forEach(day => {
-      const header = document.createElement('div');
-      header.className = 'day-header';
-      header.innerText = day;
-      gridDiv.appendChild(header);
-    });
+            if (currentView === 'month') {
+                container.appendChild(createMonthElement(displayYear, displayMonth, marks));
+            } else if (currentView === '6months') {
+                let y = now.getFullYear();
+                let m = now.getMonth();
+                for (let i = 0; i < 6; i++) {
+                    let targetDate = new Date(y, m + i, 1);
+                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks));
+                }
+            } else if (currentView === 'year') {
+                let y = now.getFullYear();
+                let startM = now.getMonth(); // Começa do mês atual até dezembro
+                for (let m = startM; m < 12; m++) {
+                    container.appendChild(createMonthElement(y, m, marks));
+                }
+            }
+        }
 
-    const firstDayOfMonth = new Date(targetYear, targetMonth, 1);
-    const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0);
-    const startingDayOfWeek = firstDayOfMonth.getDay();
+        function createMonthElement(year, month, marks) {
+            const wrapper = document.createElement('div');
+            
+            const title = document.createElement('h2');
+            title.innerText = `${monthNames[month]} de ${year}`;
+            wrapper.appendChild(title);
 
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      const emptyDiv = document.createElement('div');
-      emptyDiv.className = 'day empty';
-      gridDiv.appendChild(emptyDiv);
-    }
+            const grid = document.createElement('div');
+            grid.className = 'calendar-grid';
 
-    const totalDaysInMonth = lastDayOfMonth.getDate();
-    for (let d = 1; d <= totalDaysInMonth; d++) {
-      const currentDate = new Date(targetYear, targetMonth, d);
-      const dayDiv = document.createElement('div');
-      dayDiv.className = 'day';
-      dayDiv.innerText = d;
+            // Cabeçalho dos dias da semana
+            weekDays.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'weekday';
+                div.innerText = d;
+                grid.appendChild(div);
+            });
 
-      const diffTime = currentDate.getTime() - referenceStartDate.getTime();
-      const absoluteDayIndex = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
 
-      let status = 'folga';
-      if (cycle === '12x36') {
-        status = (absoluteDayIndex % 2 === 0) ? 'trabalho' : 'folga';
-      } else if (cycle === '6x1') {
-        let mod = ((absoluteDayIndex % 7) + 7) % 7;
-        status = (mod === 6) ? 'folga' : 'trabalho';
-      } else if (cycle === '5x2') {
-        let mod = ((absoluteDayIndex % 7) + 7) % 7;
-        status = (mod === 5 || mod === 6) ? 'folga' : 'trabalho';
-      }
+            // Espaços vazios do início do mês
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day empty';
+                grid.appendChild(emptyDiv);
+            }
 
-      if (isHoliday(d, targetMonth + 1)) {
-        dayDiv.classList.add('feriado');
-      } else {
-        dayDiv.classList.add(status);
-      }
+            // Dias do mês
+            for (let day = 1; day <= totalDays; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day';
+                dayDiv.innerText = day;
 
-      gridDiv.appendChild(dayDiv);
-    }
+                let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                if (marks[dateKey]) {
+                    dayDiv.classList.add('highlighted');
+                }
 
-    container.appendChild(gridDiv);
-  }
+                dayDiv.onclick = function() {
+                    toggleDay(dateKey);
+                };
 
-  function generateCalendar() {
-    const container = document.getElementById('calendar-container');
-    container.innerHTML = '';
+                grid.appendChild(dayDiv);
+            }
 
-    const startDateVal = document.getElementById('startDate').value;
-    if (!startDateVal) {
-      alert("Selecione a data do primeiro dia de trabalho!");
-      return;
-    }
+            wrapper.appendChild(grid);
+            return wrapper;
+        }
 
-    const parts = startDateVal.split('-');
-    const referenceStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
-
-    const cycle = document.getElementById('cycle').value;
-    const viewMode = document.getElementById('viewMode').value;
-
-    const baseYear = referenceStartDate.getFullYear();
-    const baseMonth = referenceStartDate.getMonth();
-
-    if (viewMode === '1') {
-      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
-    } else if (viewMode === '3') {
-      let prevMonth = baseMonth - 1;
-      let prevYear = baseYear;
-      if (prevMonth < 0) { prevMonth = 11; prevYear--; }
-
-      let nextMonth = baseMonth + 1;
-      let nextYear = baseYear;
-      if (nextMonth > 11) { nextMonth = 0; nextYear++; }
-
-      renderSingleMonth(prevYear, prevMonth, referenceStartDate, cycle);
-      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
-      renderSingleMonth(nextYear, nextMonth, referenceStartDate, cycle);
-    } else if (viewMode === 'yearAgo') {
-      renderSingleMonth(baseYear - 1, baseMonth, referenceStartDate, cycle);
-      renderSingleMonth(baseYear, baseMonth, referenceStartDate, cycle);
-    }
-  }
-</script>
+        // Renderiza a tela inicial padrão
+        renderCalendar();
+    </script>
 </body>
 </html>
