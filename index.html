@@ -54,7 +54,7 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .weekday {
             text-align: center;
@@ -103,6 +103,29 @@
             font-weight: bold;
             border: 2px solid #ca8a04;
         }
+        /* Estilo da Legenda */
+        .legend-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            font-size: 12px;
+            color: #475569;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            margin-top: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid #cbd5e1;
+        }
     </style>
 </head>
 <body>
@@ -137,7 +160,6 @@
         let displayYear = now.getFullYear();
         let displayMonth = now.getMonth();
 
-        // Feriados Nacionais Fixos e Datas Importantes de 2026
         const holidays2026 = {
             "2026-01-01": "Ano Novo",
             "2026-04-21": "Tiradentes",
@@ -192,7 +214,6 @@
         function getDayStatus(year, month, day) {
             let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // Feriado tem prioridade (Vermelho)
             if (holidays2026[dateKey]) {
                 return 'feriado';
             }
@@ -209,7 +230,6 @@
             if (diffDays < 0) return '';
 
             if (scaleType === '12x36') {
-                // Alternância: Par = Plantão (Azul), Ímpar = Folga (Verde)
                 return (diffDays % 2 === 0) ? 'plantao' : 'folga';
             } else if (scaleType === '6x1') {
                 return (diffDays % 7 === 6) ? 'folga' : 'plantao';
@@ -276,13 +296,11 @@
 
                 let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
-                // Aplica cor de escala (plantão/folga/feriado)
                 let status = getDayStatus(year, month, day);
                 if (status) {
                     dayDiv.classList.add(status);
                 }
 
-                // Se houver marcação manual amarela por cima
                 if (marks[dateKey]) {
                     dayDiv.classList.add('highlighted');
                 }
@@ -295,6 +313,18 @@
             }
 
             wrapper.appendChild(grid);
+
+            // Adiciona a legenda explicativa abaixo de cada mês
+            const legend = document.createElement('div');
+            legend.className = 'legend-box';
+            legend.innerHTML = `
+                <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
+                <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Folga</div>
+                <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Feriado</div>
+                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Manual</div>
+            `;
+            wrapper.appendChild(legend);
+
             return wrapper;
         }
     </script>
