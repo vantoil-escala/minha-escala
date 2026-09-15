@@ -131,9 +131,9 @@
 <body>
 
     <div class="controls">
-        <button onclick="setView('month')">Mês Atual</button>
+        <button onclick="setView('month')">Mês Inicial</button>
         <button onclick="setView('6months')">Próximos 6 Meses</button>
-        <button onclick="setView('Ano Todo')">Ano Todo (2026)</button>
+        <button onclick="setView('Ano Todo')">Ano da Base</button>
     </div>
 
     <div class="scale-selector">
@@ -156,9 +156,6 @@
         const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
         
         let currentView = 'month';
-        let now = new Date();
-        let displayYear = now.getFullYear();
-        let displayMonth = now.getMonth();
 
         const holidays2026 = {
             "2026-01-01": "Ano Novo",
@@ -179,6 +176,7 @@
             if (savedBase) {
                 document.getElementById('baseDate').value = savedBase;
             } else {
+                let now = new Date();
                 document.getElementById('baseDate').value = now.toISOString().split('T')[0];
             }
             renderCalendar();
@@ -211,10 +209,19 @@
             renderCalendar();
         }
 
+        function getBaseYearMonth() {
+            let baseDateStr = document.getElementById('baseDate').value;
+            if (!baseDateStr) {
+                let now = new Date();
+                return { year: now.getFullYear(), month: now.getMonth() };
+            }
+            let parts = baseDateStr.split('-');
+            return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1 };
+        }
+
         function getDayStatus(year, month, day) {
             let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // Feriado sempre tem prioridade máxima
             if (holidays2026[dateKey]) {
                 return 'feriado';
             }
@@ -229,11 +236,10 @@
             let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
             if (scaleType === '12x36') {
-                // O operador de resto (%) lida perfeitamente com dias negativos para trás
                 let mod = diffDays % 2;
                 return (mod === 0 || mod === -0) ? 'plantao' : 'folga';
             } else if (scaleType === '6x1') {
-                let mod = ((diffDays % 7) + 7) % 7; // Garante o resto positivo para datas passadas
+                let mod = ((diffDays % 7) + 7) % 7;
                 return (mod === 6) ? 'folga' : 'plantao';
             } else if (scaleType === '5x2') {
                 let dayOfWeek = currentDate.getDay();
@@ -246,19 +252,19 @@
             const container = document.getElementById('app');
             container.innerHTML = '';
             let marks = getSavedMarks();
+            let baseYM = getBaseYearMonth();
 
             if (currentView === 'month') {
-                container.appendChild(createMonthElement(displayYear, displayMonth, marks));
+                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks));
             } else if (currentView === '6months') {
-                let y = now.getFullYear();
-                let m = now.getMonth();
+                let y = baseYM.year;
+                let m = baseYM.month;
                 for (let i = 0; i < 6; i++) {
                     let targetDate = new Date(y, m + i, 1);
                     container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks));
                 }
             } else if (currentView === 'Ano Todo') {
-                let y = now.getFullYear();
-                // Mostra o ano inteiro de janeiro a dezembro para consulta completa
+                let y = baseYM.year;
                 for (let m = 0; m < 12; m++) {
                     container.appendChild(createMonthElement(y, m, marks));
                 }
@@ -296,7 +302,7 @@
                 dayDiv.className = 'day';
                 dayDiv.innerText = day;
 
-                let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
                 let status = getDayStatus(year, month, day);
                 if (status) {
@@ -311,13 +317,11 @@
                     toggleDay(dateKey);
                 };
 
-                grid.async = true;
                 grid.appendChild(dayDiv);
             }
 
             wrapper.appendChild(grid);
 
-            // Legenda explicativa
             const legend = document.createElement('div');
             legend.className = 'legend-box';
             legend.innerHTML = `
