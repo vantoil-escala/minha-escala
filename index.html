@@ -107,9 +107,9 @@
         .legend-box {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 8px;
             justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #475569;
             border-top: 1px solid #e2e8f0;
             padding-top: 12px;
@@ -118,7 +118,7 @@
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
         .legend-color {
             width: 14px;
@@ -314,14 +314,14 @@
 
             wrapper.appendChild(grid);
 
-            // Adiciona a legenda explicativa abaixo de cada mês
+            // Legenda ajustada com a instrução de clique
             const legend = document.createElement('div');
             legend.className = 'legend-box';
             legend.innerHTML = `
                 <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
                 <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Folga</div>
                 <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Feriado</div>
-                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Manual</div>
+                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Clique p/ folga trabalhada</div>
             `;
             wrapper.appendChild(legend);
 
