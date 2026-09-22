@@ -222,12 +222,12 @@
             return notes ? JSON.parse(notes) : {};
         }
 
-        // Clique normal alterna a marcação amarela (Folga Trabalhada)
+        // Clique simples alterna apenas entre Amarelo (Folga Trabalhada) e Normal
         function toggleDay(dateKey) {
             let marks = getSavedMarks();
             let vacations = getSavedVacations();
             
-            // Se tiver férias, remove para dar lugar ao amarelo, ou vice-versa
+            // Se o dia for férias (roxo), o clique simples remove o roxo e põe amarelo (caso tenha trabalhado)
             if (vacations[dateKey]) {
                 delete vacations[dateKey];
                 localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
@@ -242,28 +242,33 @@
             renderCalendar();
         }
 
-        // Duplo clique (ou clique alternativo / podemos usar duplo clique ou toque)
-        // Como no mobile o toque longo é nota, vamos criar uma função para alternar para roxo com um gesto ou podemos alternar a ordem.
-        // Espere: no celular, como o clique simples já é amarelo, podemos fazer o toque duplo ou adicionar um modo, 
-        // ou alternar: Clique simples cicla entre: Normal -> Amarelo (Folga Trabalhada) -> Roxo (Férias) -> Normal!
-        function cycleDayStatus(dateKey) {
-            let marks = getSavedMarks();
-            let vacations = getSavedVacations();
+        // Duplo clique no dia ativa o período de férias automático a partir dali
+        function handleDoubleClick(startDateStr) {
+            let inputDays = prompt("Quantos dias de férias?", "30");
+            if (inputDays === null) return; // Se cancelar
+            
+            let numDays = parseInt(inputDays);
+            if (isNaN(numDays) || numDays <= 0) return;
 
-            if (!marks[dateKey] && !vacations[dateKey]) {
-                // Vai para Amarelo
-                marks[dateKey] = true;
-            } else if (marks[dateKey]) {
-                // Sai do Amarelo e vai para Roxo (Férias)
-                delete marks[dateKey];
-                vacations[dateKey] = true;
-            } else if (vacations[dateKey]) {
-                // Sai do Roxo e volta ao normal
-                delete vacations[dateKey];
+            let vacations = getSavedVacations();
+            let marks = getSavedMarks();
+            let startDate = new Date(startDateStr + 'T00:00:00');
+
+            for (let i = 0; i < numDays; i++) {
+                let d = new Date(startDate);
+                d.setDate(startDate.getDate() + i);
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                let key = `${y}-${m}-${dayStr}`;
+
+                // Marca de roxo e remove eventual amarelo anterior
+                vacations[key] = true;
+                if (marks[key]) delete marks[key];
             }
 
-            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
             localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
             renderCalendar();
         }
 
@@ -390,28 +395,30 @@
                     dayDiv.classList.add(status);
                 }
 
-                // Se estiver marcado como folga trabalhada (Amarelo)
                 if (marks[dateKey]) {
                     dayDiv.classList.add('highlighted');
                 }
 
-                // Se estiver marcado como Férias (Roxo)
                 if (vacations[dateKey]) {
                     dayDiv.classList.add('vacation');
                 }
 
-                // Se houver anotação, coloca o pontinho indicador
                 if (notes[dateKey]) {
                     dayDiv.classList.add('has-note');
                     dayDiv.title = notes[dateKey];
                 }
 
-                // Clique normal alterna entre: Normal -> Amarelo (Folga Trab.) -> Roxo (Férias) -> Normal
+                // Clique simples alterna entre Amarelo e Normal (ou apaga o roxo se clicar em cima)
                 dayDiv.onclick = function() {
-                    cycleDayStatus(dateKey);
+                    toggleDay(dateKey);
                 };
 
-                // Toque longo abre a caixa para editar a nota
+                // Duplo clique (ou duplo toque) ativa o intervalo automático de férias a partir daquele dia
+                dayDiv.ondblclick = function() {
+                    handleDoubleClick(dateKey);
+                };
+
+                // Toque longo abre a caixinha de notas
                 dayDiv.oncontextmenu = function(e) {
                     e.preventDefault();
                     editDayNote(dateKey);
