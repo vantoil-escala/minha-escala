@@ -222,7 +222,6 @@
             return notes ? JSON.parse(notes) : {};
         }
 
-        // Clique simples alterna apenas entre Amarelo (Folga Trabalhada) e Normal
         function toggleDay(dateKey) {
             let marks = getSavedMarks();
             let vacations = getSavedVacations();
@@ -241,16 +240,13 @@
             renderCalendar();
         }
 
-        // Duplo clique gerencia as férias (Adicionar intervalo ou limpar)
         function handleDoubleClick(startDateStr) {
             let vacations = getSavedVacations();
 
-            // Se o dia já for férias, pergunta se deseja remover as férias a partir daqui
             if (vacations[startDateStr]) {
                 let remover = confirm("Deseja remover as férias a partir deste dia?");
                 if (remover) {
                     let startDate = new Date(startDateStr + 'T00:00:00');
-                    // Remove os próximos 30 dias caso o utilizador queira limpar um bloco
                     for (let i = 0; i < 30; i++) {
                         let d = new Date(startDate);
                         d.setDate(startDate.getDate() + i);
@@ -266,7 +262,6 @@
                 return;
             }
 
-            // Caso contrário, pede a quantidade correta de dias
             let inputDays = prompt("Quantos dias de férias?", "30");
             if (inputDays === null) return; 
             
@@ -448,7 +443,6 @@
             wrapper.appendChild(grid);
 
             const legend = document.createElement('div');
-            legend.className> = 'legend-box'; // Corrigido erro de sintaxe
             legend.className = 'legend-box';
             legend.innerHTML = `
                 <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
