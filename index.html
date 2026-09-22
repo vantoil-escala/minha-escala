@@ -244,36 +244,18 @@
             let vacations = getSavedVacations();
             let marks = getSavedMarks();
 
-            let inputDays = prompt("Quantos dias de férias? (Digite 0 ou apague para remover a partir desta data):", "30");
+            let inputDays = prompt("Quantos dias de férias? (Digite 0 para apagar todo o bloco a partir desta data):", "30");
             if (inputDays === null) return; 
             
             let numDays = parseInt(inputDays, 10);
-            
             let startDate = new Date(startDateStr + 'T00:00:00');
 
-            // Se digitar 0 ou número inválido, limpa um bloco padrão de 30 dias ou remove a partir da data
-            if (isNaN(numDays) || numDays <= 0) {
-                let remover = confirm("Deseja remover as férias a partir deste dia?");
-                if (remover) {
-                    for (let i = 0; i < 60; i++) {
-                        let d = new Date(startDate);
-                        d.setDate(startDate.getDate() + i);
-                        let y = d.getFullYear();
-                        let m = String(d.getMonth() + 1).padStart(2, '0');
-                        let dayStr = String(d.getDate()).padStart(2, '0');
-                        let key = `${y}-${m}-${dayStr}`;
-                        if (vacations[key]) delete vacations[key];
-                    }
-                    localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
-                    renderCalendar();
-                }
-                return;
-            }
-
-            // ANTES DE CADASTRAR OS NOVOS: Limpa qualquer rastro antigo de férias logo a partir desta data exata (evita o acúmulo)
-            for (let i = 0; i < 90; i++) {
-                let d = new Date(startDate);
-                d.setDate(startDate.getDate() + i);
+            // LIMPEZA TOTAL DE SEGURANÇA: Varre um raio amplo (60 dias para trás e 120 para frente) para arrancar qualquer bloco antigo pela raiz
+            let sweepStart = new Date(startDate);
+            sweepStart.setDate(sweepStart.getDate() - 60);
+            for (let i = 0; i < 200; i++) {
+                let d = new Date(sweepStart);
+                d.setDate(sweepStart.getDate() + i);
                 let y = d.getFullYear();
                 let m = String(d.getMonth() + 1).padStart(2, '0');
                 let dayStr = String(d.getDate()).padStart(2, '0');
@@ -281,7 +263,14 @@
                 if (vacations[key]) delete vacations[key];
             }
 
-            // Aplica a nova quantidade exata de dias
+            // Se digitou 0 ou número inválido, a limpeza acima já resolveu e removeu tudo!
+            if (isNaN(numDays) || numDays <= 0) {
+                localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+                renderCalendar();
+                return;
+            }
+
+            // Aplica exatamente a nova quantidade de dias informada a partir da data escolhida
             for (let i = 0; i < numDays; i++) {
                 let d = new Date(startDate);
                 d.setDate(startDate.getDate() + i);
