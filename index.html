@@ -97,14 +97,21 @@
             color: #991b1b;
             font-weight: bold;
         }
-        /* Marcação manual amarela */
+        /* Marcação manual amarela (Folga Trabalhada) */
         .day.highlighted {
             background-color: #facc15 !important;
             color: #713f12;
             font-weight: bold;
             border: 2px solid #ca8a04;
         }
-        /* Indicador discreto de anotação (um pontinho ou traço no canto) */
+        /* Marcação manual roxa (Férias) */
+        .day.vacation {
+            background-color: #c084fc !important;
+            color: #581c87;
+            font-weight: bold;
+            border: 2px solid #9333ea;
+        }
+        /* Indicador discreto de anotação (pontinho laranja) */
         .day.has-note::after {
             content: '';
             position: absolute;
@@ -205,19 +212,58 @@
             return marks ? JSON.parse(marks) : {};
         }
 
+        function getSavedVacations() {
+            let vacations = localStorage.getItem('minhaescala_vacations');
+            return vacations ? JSON.parse(vacations) : {};
+        }
+
         function getSavedNotes() {
             let notes = localStorage.getItem('minhaescala_notes');
             return notes ? JSON.parse(notes) : {};
         }
 
+        // Clique normal alterna a marcação amarela (Folga Trabalhada)
         function toggleDay(dateKey) {
             let marks = getSavedMarks();
+            let vacations = getSavedVacations();
+            
+            // Se tiver férias, remove para dar lugar ao amarelo, ou vice-versa
+            if (vacations[dateKey]) {
+                delete vacations[dateKey];
+                localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+            }
+
             if (marks[dateKey]) {
                 delete marks[dateKey];
             } else {
                 marks[dateKey] = true;
             }
             localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
+            renderCalendar();
+        }
+
+        // Duplo clique (ou clique alternativo / podemos usar duplo clique ou toque)
+        // Como no mobile o toque longo é nota, vamos criar uma função para alternar para roxo com um gesto ou podemos alternar a ordem.
+        // Espere: no celular, como o clique simples já é amarelo, podemos fazer o toque duplo ou adicionar um modo, 
+        // ou alternar: Clique simples cicla entre: Normal -> Amarelo (Folga Trabalhada) -> Roxo (Férias) -> Normal!
+        function cycleDayStatus(dateKey) {
+            let marks = getSavedMarks();
+            let vacations = getSavedVacations();
+
+            if (!marks[dateKey] && !vacations[dateKey]) {
+                // Vai para Amarelo
+                marks[dateKey] = true;
+            } else if (marks[dateKey]) {
+                // Sai do Amarelo e vai para Roxo (Férias)
+                delete marks[dateKey];
+                vacations[dateKey] = true;
+            } else if (vacations[dateKey]) {
+                // Sai do Roxo e volta ao normal
+                delete vacations[dateKey];
+            }
+
+            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
+            localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
             renderCalendar();
         }
 
@@ -285,27 +331,28 @@
             const container = document.getElementById('app');
             container.innerHTML = '';
             let marks = getSavedMarks();
+            let vacations = getSavedVacations();
             let notes = getSavedNotes();
             let baseYM = getBaseYearMonth();
 
             if (currentView === 'month') {
-                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks, notes));
+                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks, vacations, notes));
             } else if (currentView === '6months') {
                 let y = baseYM.year;
                 let m = baseYM.month;
                 for (let i = 0; i < 6; i++) {
                     let targetDate = new Date(y, m + i, 1);
-                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks, notes));
+                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks, vacations, notes));
                 }
             } else if (currentView === 'Ano Todo') {
                 let y = baseYM.year;
                 for (let m = 0; m < 12; m++) {
-                    container.appendChild(createMonthElement(y, m, marks, notes));
+                    container.appendChild(createMonthElement(y, m, marks, vacations, notes));
                 }
             }
         }
 
-        function createMonthElement(year, month, marks, notes) {
+        function createMonthElement(year, month, marks, vacations, notes) {
             const wrapper = document.createElement('div');
             
             const title = document.createElement('h2');
@@ -343,19 +390,25 @@
                     dayDiv.classList.add(status);
                 }
 
+                // Se estiver marcado como folga trabalhada (Amarelo)
                 if (marks[dateKey]) {
                     dayDiv.classList.add('highlighted');
                 }
 
-                // Se houver anotação, coloca um pontinho indicador e o texto completo ao segurar ou passar o rato
+                // Se estiver marcado como Férias (Roxo)
+                if (vacations[dateKey]) {
+                    dayDiv.classList.add('vacation');
+                }
+
+                // Se houver anotação, coloca o pontinho indicador
                 if (notes[dateKey]) {
                     dayDiv.classList.add('has-note');
                     dayDiv.title = notes[dateKey];
                 }
 
-                // Clique normal para mudar a cor de folga trabalhada
+                // Clique normal alterna entre: Normal -> Amarelo (Folga Trab.) -> Roxo (Férias) -> Normal
                 dayDiv.onclick = function() {
-                    toggleDay(dateKey);
+                    cycleDayStatus(dateKey);
                 };
 
                 // Toque longo abre a caixa para editar a nota
@@ -375,7 +428,8 @@
                 <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
                 <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Folga</div>
                 <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Feriado</div>
-                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Clique p/ folga trabalhada</div>
+                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Trab. (Amarelo)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#c084fc;"></div> Férias (Roxo)</div>
             `;
             wrapper.appendChild(legend);
 
