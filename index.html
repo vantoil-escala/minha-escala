@@ -66,6 +66,7 @@
         .day {
             aspect-ratio: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             background-color: #f8fafc;
@@ -74,6 +75,7 @@
             font-size: 14px;
             cursor: pointer;
             user-select: none;
+            position: relative;
         }
         .day.empty {
             background-color: transparent;
@@ -102,6 +104,16 @@
             color: #713f12;
             font-weight: bold;
             border: 2px solid #ca8a04;
+        }
+        /* Indicador de anotação */
+        .note-indicator {
+            font-size: 9px;
+            color: #ea580c;
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
         }
         /* Estilo da Legenda */
         .legend-box {
@@ -193,6 +205,11 @@
             return marks ? JSON.parse(marks) : {};
         }
 
+        function getSavedNotes() {
+            let notes = localStorage.getItem('minhaescala_notes');
+            return notes ? JSON.parse(notes) : {};
+        }
+
         function toggleDay(dateKey) {
             let marks = getSavedMarks();
             if (marks[dateKey]) {
@@ -202,6 +219,22 @@
             }
             localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
             renderCalendar();
+        }
+
+        function editDayNote(dateKey) {
+            let notes = getSavedNotes();
+            let currentNote = notes[dateKey] || "";
+            let newNote = prompt("Digite sua anotação para o dia " + dateKey.split('-').reverse().join('/') + ":", currentNote);
+            
+            if (newNote !== null) {
+                if (newNote.trim() === "") {
+                    delete notes[dateKey];
+                } else {
+                    notes[dateKey] = newNote.trim();
+                }
+                localStorage.setItem('minhaescala_notes', JSON.stringify(notes));
+                renderCalendar();
+            }
         }
 
         function setView(viewType) {
@@ -252,26 +285,27 @@
             const container = document.getElementById('app');
             container.innerHTML = '';
             let marks = getSavedMarks();
+            let notes = getSavedNotes();
             let baseYM = getBaseYearMonth();
 
             if (currentView === 'month') {
-                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks));
+                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks, notes));
             } else if (currentView === '6months') {
                 let y = baseYM.year;
                 let m = baseYM.month;
                 for (let i = 0; i < 6; i++) {
                     let targetDate = new Date(y, m + i, 1);
-                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks));
+                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks, notes));
                 }
             } else if (currentView === 'Ano Todo') {
                 let y = baseYM.year;
                 for (let m = 0; m < 12; m++) {
-                    container.appendChild(createMonthElement(y, m, marks));
+                    container.appendChild(createMonthElement(y, m, marks, notes));
                 }
             }
         }
 
-        function createMonthElement(year, month, marks) {
+        function createMonthElement(year, month, marks, notes) {
             const wrapper = document.createElement('div');
             
             const title = document.createElement('h2');
@@ -300,9 +334,22 @@
             for (let day = 1; day <= totalDays; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'day';
-                dayDiv.innerText = day;
+                
+                let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                // Conteúdo visual do dia (Número)
+                const numSpan = document.createElement('span');
+                numSpan.innerText = day;
+                dayDiv.appendChild(numSpan);
 
-                    let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                // Se houver anotação, mostra um indicador pequeno no dia
+                if (notes[dateKey]) {
+                    const noteSpan = document.createElement('span');
+                    noteSpan.className = 'note-indicator';
+                    noteSpan.innerText = notes[dateKey];
+                    dayDiv.appendChild(noteSpan);
+                    dayDiv.title = notes[dateKey]; // Mostra o texto ao passar o rato/tocar
+                }
                 
                 let status = getDayStatus(year, month, day);
                 if (status) {
@@ -313,8 +360,15 @@
                     dayDiv.classList.add('highlighted');
                 }
 
+                // Clique normal para mudar a cor de folga trabalhada
                 dayDiv.onclick = function() {
                     toggleDay(dateKey);
+                };
+
+                // Toque longo (Segurar o dedo ou clique direito) abre a caixa de notas
+                dayDiv.oncontextmenu = function(e) {
+                    e.preventDefault(); // Evita o menu padrão do navegador
+                    editDayNote(dateKey);
                 };
 
                 grid.appendChild(dayDiv);
