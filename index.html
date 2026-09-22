@@ -227,7 +227,6 @@
             let marks = getSavedMarks();
             let vacations = getSavedVacations();
             
-            // Se o dia for férias (roxo), o clique simples remove o roxo e põe amarelo (caso tenha trabalhado)
             if (vacations[dateKey]) {
                 delete vacations[dateKey];
                 localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
@@ -242,15 +241,38 @@
             renderCalendar();
         }
 
-        // Duplo clique no dia ativa o período de férias automático a partir dali
+        // Duplo clique gerencia as férias (Adicionar intervalo ou limpar)
         function handleDoubleClick(startDateStr) {
+            let vacations = getSavedVacations();
+
+            // Se o dia já for férias, pergunta se deseja remover as férias a partir daqui
+            if (vacations[startDateStr]) {
+                let remover = confirm("Deseja remover as férias a partir deste dia?");
+                if (remover) {
+                    let startDate = new Date(startDateStr + 'T00:00:00');
+                    // Remove os próximos 30 dias caso o utilizador queira limpar um bloco
+                    for (let i = 0; i < 30; i++) {
+                        let d = new Date(startDate);
+                        d.setDate(startDate.getDate() + i);
+                        let y = d.getFullYear();
+                        let m = String(d.getMonth() + 1).padStart(2, '0');
+                        let dayStr = String(d.getDate()).padStart(2, '0');
+                        let key = `${y}-${m}-${dayStr}`;
+                        if (vacations[key]) delete vacations[key];
+                    }
+                    localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+                    renderCalendar();
+                }
+                return;
+            }
+
+            // Caso contrário, pede a quantidade correta de dias
             let inputDays = prompt("Quantos dias de férias?", "30");
-            if (inputDays === null) return; // Se cancelar
+            if (inputDays === null) return; 
             
-            let numDays = parseInt(inputDays);
+            let numDays = parseInt(inputDays, 10);
             if (isNaN(numDays) || numDays <= 0) return;
 
-            let vacations = getSavedVacations();
             let marks = getSavedMarks();
             let startDate = new Date(startDateStr + 'T00:00:00');
 
@@ -262,7 +284,6 @@
                 let dayStr = String(d.getDate()).padStart(2, '0');
                 let key = `${y}-${m}-${dayStr}`;
 
-                // Marca de roxo e remove eventual amarelo anterior
                 vacations[key] = true;
                 if (marks[key]) delete marks[key];
             }
@@ -408,17 +429,14 @@
                     dayDiv.title = notes[dateKey];
                 }
 
-                // Clique simples alterna entre Amarelo e Normal (ou apaga o roxo se clicar em cima)
                 dayDiv.onclick = function() {
                     toggleDay(dateKey);
                 };
 
-                // Duplo clique (ou duplo toque) ativa o intervalo automático de férias a partir daquele dia
                 dayDiv.ondblclick = function() {
                     handleDoubleClick(dateKey);
                 };
 
-                // Toque longo abre a caixinha de notas
                 dayDiv.oncontextmenu = function(e) {
                     e.preventDefault();
                     editDayNote(dateKey);
@@ -430,6 +448,7 @@
             wrapper.appendChild(grid);
 
             const legend = document.createElement('div');
+            legend.className> = 'legend-box'; // Corrigido erro de sintaxe
             legend.className = 'legend-box';
             legend.innerHTML = `
                 <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
