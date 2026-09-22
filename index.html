@@ -242,12 +242,20 @@
 
         function handleDoubleClick(startDateStr) {
             let vacations = getSavedVacations();
+            let marks = getSavedMarks();
 
-            if (vacations[startDateStr]) {
+            let inputDays = prompt("Quantos dias de férias? (Digite 0 ou apague para remover a partir desta data):", "30");
+            if (inputDays === null) return; 
+            
+            let numDays = parseInt(inputDays, 10);
+            
+            let startDate = new Date(startDateStr + 'T00:00:00');
+
+            // Se digitar 0 ou número inválido, limpa um bloco padrão de 30 dias ou remove a partir da data
+            if (isNaN(numDays) || numDays <= 0) {
                 let remover = confirm("Deseja remover as férias a partir deste dia?");
                 if (remover) {
-                    let startDate = new Date(startDateStr + 'T00:00:00');
-                    for (let i = 0; i < 30; i++) {
+                    for (let i = 0; i < 60; i++) {
                         let d = new Date(startDate);
                         d.setDate(startDate.getDate() + i);
                         let y = d.getFullYear();
@@ -262,15 +270,18 @@
                 return;
             }
 
-            let inputDays = prompt("Quantos dias de férias?", "30");
-            if (inputDays === null) return; 
-            
-            let numDays = parseInt(inputDays, 10);
-            if (isNaN(numDays) || numDays <= 0) return;
+            // ANTES DE CADASTRAR OS NOVOS: Limpa qualquer rastro antigo de férias logo a partir desta data exata (evita o acúmulo)
+            for (let i = 0; i < 90; i++) {
+                let d = new Date(startDate);
+                d.setDate(startDate.getDate() + i);
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                let key = `${y}-${m}-${dayStr}`;
+                if (vacations[key]) delete vacations[key];
+            }
 
-            let marks = getSavedMarks();
-            let startDate = new Date(startDateStr + 'T00:00:00');
-
+            // Aplica a nova quantidade exata de dias
             for (let i = 0; i < numDays; i++) {
                 let d = new Date(startDate);
                 d.setDate(startDate.getDate() + i);
