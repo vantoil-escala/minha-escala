@@ -66,7 +66,6 @@
         .day {
             aspect-ratio: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             background-color: #f8fafc;
@@ -105,15 +104,16 @@
             font-weight: bold;
             border: 2px solid #ca8a04;
         }
-        /* Indicador de anotação */
-        .note-indicator {
-            font-size: 9px;
-            color: #ea580c;
-            max-width: 90%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-top: 2px;
+        /* Indicador discreto de anotação (um pontinho ou traço no canto) */
+        .day.has-note::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 6px;
+            height: 6px;
+            background-color: #ea580c;
+            border-radius: 50%;
         }
         /* Estilo da Legenda */
         .legend-box {
@@ -334,22 +334,9 @@
             for (let day = 1; day <= totalDays; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'day';
+                dayDiv.innerText = day;
                 
                 let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                
-                // Conteúdo visual do dia (Número)
-                const numSpan = document.createElement('span');
-                numSpan.innerText = day;
-                dayDiv.appendChild(numSpan);
-
-                // Se houver anotação, mostra um indicador pequeno no dia
-                if (notes[dateKey]) {
-                    const noteSpan = document.createElement('span');
-                    noteSpan.className = 'note-indicator';
-                    noteSpan.innerText = notes[dateKey];
-                    dayDiv.appendChild(noteSpan);
-                    dayDiv.title = notes[dateKey]; // Mostra o texto ao passar o rato/tocar
-                }
                 
                 let status = getDayStatus(year, month, day);
                 if (status) {
@@ -360,14 +347,20 @@
                     dayDiv.classList.add('highlighted');
                 }
 
+                // Se houver anotação, coloca um pontinho indicador e o texto completo ao segurar ou passar o rato
+                if (notes[dateKey]) {
+                    dayDiv.classList.add('has-note');
+                    dayDiv.title = notes[dateKey];
+                }
+
                 // Clique normal para mudar a cor de folga trabalhada
                 dayDiv.onclick = function() {
                     toggleDay(dateKey);
                 };
 
-                // Toque longo (Segurar o dedo ou clique direito) abre a caixa de notas
+                // Toque longo abre a caixa para editar a nota
                 dayDiv.oncontextmenu = function(e) {
-                    e.preventDefault(); // Evita o menu padrão do navegador
+                    e.preventDefault();
                     editDayNote(dateKey);
                 };
 
