@@ -162,6 +162,9 @@
             <option value="12x36">12x36</option>
             <option value="6x1">6x1</option>
             <option value="5x2">5x2</option>
+            <option value="2x2">2x2 (2 trab / 2 folga)</option>
+            <option value="24x48">24x48</option>
+            <option value="24x72">24x72</option>
         </select>
         <br><br>
         <label for="baseDate"><strong>Início:</strong></label>
@@ -344,6 +347,18 @@
             } else if (scaleType === '5x2') {
                 let dayOfWeek = currentDate.getDay();
                 return (dayOfWeek === 0 || dayOfWeek === 6) ? 'folga' : 'plantao';
+            } else if (scaleType === '2x2') {
+                // Ciclo de 4 dias (2 trabalho, 2 folga)
+                let mod = ((diffDays % 4) + 4) % 4;
+                return (mod < 2) ? 'plantao' : 'folga';
+            } else if (scaleType === '24x48') {
+                // Ciclo de 3 dias (1 trabalho, 2 folga)
+                let mod = ((diffDays % 3) + 3) % 3;
+                return (mod === 0) ? 'plantao' : 'folga';
+            } else if (scaleType === '24x72') {
+                // Ciclo de 4 dias (1 trabalho, 3 folga)
+                let mod = ((diffDays % 4) + 4) % 4;
+                return (mod === 0) ? 'plantao' : 'folga';
             }
             return '';
         }
