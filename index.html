@@ -179,16 +179,63 @@
         
         let currentView = 'month';
 
-        const holidays2026 = {
-            "2026-01-01": "Ano Novo",
-            "2026-04-21": "Tiradentes",
-            "2026-05-01": "Dia do Trabalho",
-            "2026-09-07": "Independência",
-            "2026-10-12": "Nossa Sra. Aparecida",
-            "2026-11-02": "Finados",
-            "2026-11-15": "Proclamação da República",
-            "2026-12-25": "Natal"
-        };
+        // Função para calcular os feriados (Fixos e Móveis por ano dinamicamente)
+        function getHolidaysForYear(year) {
+            let holidays = {};
+
+            // 1. Feriados Nacionais Fixos
+            holidays[`${year}-01-01`] = "Confraternização Universal";
+            holidays[`${year}-04-21`] = "Tiradentes";
+            holidays[`${year}-05-01`] = "Dia do Trabalho";
+            holidays[`${year}-09-07`] = "Independência do Brasil";
+            holidays[`${year}-10-12`] = "Nossa Sra. Aparecida";
+            holidays[`${year}-11-02`] = "Finados";
+            holidays[`${year}-11-15`] = "Proclamação da República";
+            holidays[`${year}-12-25`] = "Natal";
+
+            // 2. Cálculo da Páscoa (Algoritmo de Meeus/Jones/Butcher)
+            let a = year % 19;
+            let b = Math.floor(year / 100);
+            let c = year % 100;
+            let d = Math.floor(b / 4);
+            let e = b % 4;
+            let f = Math.floor((b + 8) / 25);
+            let g = Math.floor((b - f + 1) / 3);
+            let h = (19 * a + b - d - g + 15) % 30;
+            let i = Math.floor(c / 4);
+            let k = c % 4;
+            let l = (32 + 2 * e + 2 * i - h - k) % 7;
+            let m = Math.floor((a + 11 * h + 22 * l) / 451);
+            let month = Math.floor((h + l - 7 * m + 114) / 31);
+            let day = ((h + l - 7 * m + 114) % 31) + 1;
+
+            let easterDate = new Date(year, month - 1, day);
+
+            // Função auxiliar para formatar a data como YYYY-MM-DD
+            function formatDate(d) {
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${dayStr}`;
+            }
+
+            // Carnaval (Terça-feira: 47 dias antes da Páscoa)
+            let carnaval = new Date(easterDate);
+            carnaval.setDate(easterDate.getDate() - 47);
+            holidays[formatDate(carnaval)] = "Carnaval";
+
+            // Sexta-feira Santa (2 dias antes da Páscoa)
+            let sextaSanta = new Date(easterDate);
+            sextaSanta.setDate(easterDate.getDate() - 2);
+            holidays[formatDate(sextaSanta)] = "Sexta-feira Santa";
+
+            // Corpus Christi (55 ou 60 dias após a Páscoa, tradicionalmente 60 dias)
+            let corpusChristi = new Date(easterDate);
+            corpusChristi.setDate(easterDate.getDate() + 60);
+            holidays[formatDate(corpusChristi)] = "Corpus Christi";
+
+            return holidays;
+        }
 
         window.onload = function() {
             let savedScale = localStorage.getItem('minhaescala_type');
@@ -253,7 +300,6 @@
             let numDays = parseInt(inputDays, 10);
             let startDate = new Date(startDateStr + 'T00:00:00');
 
-            // LIMPEZA TOTAL DE SEGURANÇA: Varre um raio amplo (60 dias para trás e 120 para frente) para arrancar qualquer bloco antigo pela raiz
             let sweepStart = new Date(startDate);
             sweepStart.setDate(sweepStart.getDate() - 60);
             for (let i = 0; i < 200; i++) {
@@ -266,14 +312,12 @@
                 if (vacations[key]) delete vacations[key];
             }
 
-            // Se digitou 0 ou número inválido, a limpeza acima já resolveu e removeu tudo!
             if (isNaN(numDays) || numDays <= 0) {
                 localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
                 renderCalendar();
                 return;
             }
 
-            // Aplica exatamente a nova quantidade de dias informada a partir da data escolhida
             for (let i = 0; i < numDays; i++) {
                 let d = new Date(startDate);
                 d.setDate(startDate.getDate() + i);
@@ -325,7 +369,9 @@
         function getDayStatus(year, month, day) {
             let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            if (holidays2026[dateKey]) {
+            // Puxa os feriados do ano correspondente de forma dinâmica
+            let yearHolidays = getHolidaysForYear(year);
+            if (yearHolidays[dateKey]) {
                 return 'feriado';
             }
 
@@ -348,15 +394,12 @@
                 let dayOfWeek = currentDate.getDay();
                 return (dayOfWeek === 0 || dayOfWeek === 6) ? 'folga' : 'plantao';
             } else if (scaleType === '2x2') {
-                // Ciclo de 4 dias (2 trabalho, 2 folga)
                 let mod = ((diffDays % 4) + 4) % 4;
                 return (mod < 2) ? 'plantao' : 'folga';
             } else if (scaleType === '24x48') {
-                // Ciclo de 3 dias (1 trabalho, 2 folga)
                 let mod = ((diffDays % 3) + 3) % 3;
                 return (mod === 0) ? 'plantao' : 'folga';
             } else if (scaleType === '24x72') {
-                // Ciclo de 4 dias (1 trabalho, 3 folga)
                 let mod = ((diffDays % 4) + 4) % 4;
                 return (mod === 0) ? 'plantao' : 'folga';
             }
