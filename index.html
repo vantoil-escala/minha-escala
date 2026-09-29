@@ -183,7 +183,7 @@
         function getHolidaysForYear(year) {
             let holidays = {};
 
-            // 1. Feriados Nacionais Fixos
+            // 1. Feriados Nacionais Fixos (incluindo Consciência Negra em 20 de Novembro)
             holidays[`${year}-01-01`] = "Confraternização Universal";
             holidays[`${year}-04-21`] = "Tiradentes";
             holidays[`${year}-05-01`] = "Dia do Trabalho";
@@ -191,6 +191,7 @@
             holidays[`${year}-10-12`] = "Nossa Sra. Aparecida";
             holidays[`${year}-11-02`] = "Finados";
             holidays[`${year}-11-15`] = "Proclamação da República";
+            holidays[`${year}-11-20`] = "Dia da Consciência Negra";
             holidays[`${year}-12-25`] = "Natal";
 
             // 2. Cálculo da Páscoa (Algoritmo de Meeus/Jones/Butcher)
@@ -211,7 +212,6 @@
 
             let easterDate = new Date(year, month - 1, day);
 
-            // Função auxiliar para formatar a data como YYYY-MM-DD
             function formatDate(d) {
                 let y = d.getFullYear();
                 let m = String(d.getMonth() + 1).padStart(2, '0');
@@ -229,7 +229,7 @@
             sextaSanta.setDate(easterDate.getDate() - 2);
             holidays[formatDate(sextaSanta)] = "Sexta-feira Santa";
 
-            // Corpus Christi (55 ou 60 dias após a Páscoa, tradicionalmente 60 dias)
+            // Corpus Christi (60 dias após a Páscoa)
             let corpusChristi = new Date(easterDate);
             corpusChristi.setDate(easterDate.getDate() + 60);
             holidays[formatDate(corpusChristi)] = "Corpus Christi";
@@ -369,7 +369,6 @@
         function getDayStatus(year, month, day) {
             let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // Puxa os feriados do ano correspondente de forma dinâmica
             let yearHolidays = getHolidaysForYear(year);
             if (yearHolidays[dateKey]) {
                 return 'feriado';
