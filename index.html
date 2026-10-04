@@ -158,7 +158,7 @@
     <div class="scale-selector">
         <label for="scaleType"><strong>Escala:</strong></label>
         <select id="scaleType" onchange="saveScaleSettings()">
-            <option value="none">Nenhuma</option>
+            <option value="flex">Flexível</option>
             <option value="12x36">12x36</option>
             <option value="6x1">6x1</option>
             <option value="5x2">5x2</option>
@@ -376,7 +376,7 @@
 
             let scaleType = document.getElementById('scaleType').value;
             let baseDateStr = document.getElementById('baseDate').value;
-            if (scaleType === 'none' || !baseDateStr) return '';
+            if (scaleType === 'flex' || !baseDateStr) return '';
 
             let currentDate = new Date(year, month, day);
             let baseDate = new Date(baseDateStr + 'T00:00:00');
