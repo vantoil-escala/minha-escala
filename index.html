@@ -26,6 +26,7 @@
             border-radius: 6px;
             background-color: #fff;
             cursor: pointer;
+            font-weight: bold;
         }
         button:hover {
             background-color: #e2e8f0;
@@ -37,6 +38,7 @@
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-weight: bold;
         }
         .view-container {
             background: #fff;
@@ -49,6 +51,7 @@
             color: #1e293b;
             font-size: 18px;
             margin-top: 5px;
+            font-weight: bold;
         }
         .calendar-grid {
             display: grid;
@@ -75,6 +78,7 @@
             cursor: pointer;
             user-select: none;
             position: relative;
+            font-weight: bold;
         }
         .day.empty {
             background-color: transparent;
@@ -133,11 +137,13 @@
             border-top: 1px solid #e2e8f0;
             padding-top: 12px;
             margin-top: 10px;
+            font-weight: bold;
         }
         .legend-item {
             display: flex;
             align-items: center;
             gap: 4px;
+            font-weight: bold;
         }
         .legend-color {
             width: 14px;
@@ -160,7 +166,6 @@
         <select id="scaleType" onchange="saveScaleSettings()">
             <option value="flex">Flexível</option>
             <option value="12x36">12x36</option>
-            <option value="6x1">6x1</option>
             <option value="5x2">5x2</option>
             <option value="2x2">2x2 (2 trab / 2 folga)</option>
             <option value="24x48">24x48</option>
@@ -239,7 +244,9 @@
 
         window.onload = function() {
             let savedScale = localStorage.getItem('minhaescala_type');
-            if (savedScale) document.getElementById('scaleType').value = savedScale;
+            if (savedScale && savedScale !== '6x1') {
+                document.getElementById('scaleType').value = savedScale;
+            }
             
             let savedBase = localStorage.getItem('minhaescala_base');
             if (savedBase) {
@@ -386,9 +393,6 @@
             if (scaleType === '12x36') {
                 let mod = diffDays % 2;
                 return (mod === 0 || mod === -0) ? 'plantao' : 'folga';
-            } else if (scaleType === '6x1') {
-                let mod = ((diffDays % 7) + 7) % 7;
-                return (mod === 6) ? 'folga' : 'plantao';
             } else if (scaleType === '5x2') {
                 let dayOfWeek = currentDate.getDay();
                 return (dayOfWeek === 0 || dayOfWeek === 6) ? 'folga' : 'plantao';
