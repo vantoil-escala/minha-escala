@@ -144,4 +144,426 @@
         }
         /* Estilo da Legenda */
         .legend-box {
-            display
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            font-size: 11px;
+            color: #475569;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: bold;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid #cbd5e1;
+        }
+        /* Estilo da lista de feriados do mês */
+        .month-holidays {
+            margin-top: 8px;
+            font-size: 12px;
+            text-align: center;
+            color: #b91c1c;
+            font-weight: bold;
+            background-color: #fef2f2;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px dashed #fca5a5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button onclick="setView('month')">Mês Inicial</button>
+        <button onclick="setView('6months')">Próximos 6 Meses</button>
+        <button onclick="setView('Ano Todo')">Ano da Base</button>
+    </div>
+
+    <div class="scale-selector">
+        <label for="scaleType"><strong>Escala:</strong></label>
+        <select id="scaleType" onchange="saveScaleSettings()">
+            <option value="flex">Flexível</option>
+            <option value="12x36">12x36</option>
+            <option value="5x2">5x2</option>
+            <option value="2x2">2x2 (2 trab / 2 folga)</option>
+            <option value="24x48">24x48</option>
+            <option value="24x72">24x72</option>
+        </select>
+        <br><br>
+        <label for="baseDate"><strong>Início:</strong></label>
+        <input type="date" id="baseDate" onchange="saveScaleSettings()">
+    </div>
+
+    <div id="app" class="view-container"></div>
+
+    <script>
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
+        
+        let currentView = 'month';
+
+        // Função para calcular os feriados (Fixos e Móveis por ano dinamicamente)
+        function getHolidaysForYear(year) {
+            let holidays = {};
+
+            // 1. Feriados Nacionais Fixos (incluindo Consciência Negra em 20 de Novembro)
+            holidays[`${year}-01-01`] = "Confraternização Universal";
+            holidays[`${year}-04-21`] = "Tiradentes";
+            holidays[`${year}-05-01`] = "Dia do Trabalho";
+            holidays[`${year}-09-07`] = "Independência do Brasil";
+            holidays[`${year}-10-12`] = "Nossa Sra. Aparecida";
+            holidays[`${year}-11-02`] = "Finados";
+            holidays[`${year}-11-15`] = "Proclamação da República";
+            holidays[`${year}-11-20`] = "Dia da Consciência Negra";
+            holidays[`${year}-12-25`] = "Natal";
+
+            // 2. Cálculo da Páscoa (Algoritmo de Meeus/Jones/Butcher)
+            let a = year % 19;
+            let b = Math.floor(year / 100);
+            let c = year % 100;
+            let d = Math.floor(b / 4);
+            let e = b % 4;
+            let f = Math.floor((b + 8) / 25);
+            let g = Math.floor((b - f + 1) / 3);
+            let h = (19 * a + b - d - g + 15) % 30;
+            let i = Math.floor(c / 4);
+            let k = c % 4;
+            let l = (32 + 2 * e + 2 * i - h - k) % 7;
+            let m = Math.floor((a + 11 * h + 22 * l) / 451);
+            let month = Math.floor((h + l - 7 * m + 114) / 31);
+            let day = ((h + l - 7 * m + 114) % 31) + 1;
+
+            let easterDate = new Date(year, month - 1, day);
+
+            function formatDate(d) {
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${dayStr}`;
+            }
+
+            // Carnaval (Terça-feira: 47 dias antes da Páscoa)
+            let carnaval = new Date(easterDate);
+            carnaval.setDate(easterDate.getDate() - 47);
+            holidays[formatDate(carnaval)] = "Carnaval";
+
+            // Sexta-feira Santa (2 dias antes da Páscoa)
+            let sextaSanta = new Date(easterDate);
+            sextaSanta.setDate(easterDate.getDate() - 2);
+            holidays[formatDate(sextaSanta)] = "Sexta-feira Santa";
+
+            // Corpus Christi (60 dias após a Páscoa)
+            let corpusChristi = new Date(easterDate);
+            corpusChristi.setDate(easterDate.getDate() + 60);
+            holidays[formatDate(corpusChristi)] = "Corpus Christi";
+
+            return holidays;
+        }
+
+        window.onload = function() {
+            let savedScale = localStorage.getItem('minhaescala_type');
+            if (savedScale && savedScale !== '6x1') {
+                document.getElementById('scaleType').value = savedScale;
+            }
+            
+            let savedBase = localStorage.getItem('minhaescala_base');
+            if (savedBase) {
+                document.getElementById('baseDate').value = savedBase;
+            } else {
+                let now = new Date();
+                document.getElementById('baseDate').value = now.toISOString().split('T')[0];
+            }
+            renderCalendar();
+        };
+
+        function saveScaleSettings() {
+            localStorage.setItem('minhaescala_type', document.getElementById('scaleType').value);
+            localStorage.setItem('minhaescala_base', document.getElementById('baseDate').value);
+            renderCalendar();
+        }
+
+        function getSavedMarks() {
+            let marks = localStorage.getItem('minhaescala_marks');
+            return marks ? JSON.parse(marks) : {};
+        }
+
+        function getSavedVacations() {
+            let vacations = localStorage.getItem('minhaescala_vacations');
+            return vacations ? JSON.parse(vacations) : {};
+        }
+
+        function getSavedNotes() {
+            let notes = localStorage.getItem('minhaescala_notes');
+            return notes ? JSON.parse(notes) : {};
+        }
+
+        function toggleDay(dateKey) {
+            let marks = getSavedMarks();
+            let vacations = getSavedVacations();
+            
+            if (vacations[dateKey]) {
+                delete vacations[dateKey];
+                localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+            }
+
+            if (marks[dateKey]) {
+                delete marks[dateKey];
+            } else {
+                marks[dateKey] = true;
+            }
+            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
+            renderCalendar();
+        }
+
+        function handleDoubleClick(startDateStr) {
+            let vacations = getSavedVacations();
+            let marks = getSavedMarks();
+
+            let inputDays = prompt("Quantos dias de férias? (Digite 0 para apagar todo o bloco a partir desta data):", "30");
+            if (inputDays === null) return; 
+            
+            let numDays = parseInt(inputDays, 10);
+            let startDate = new Date(startDateStr + 'T00:00:00');
+
+            let sweepStart = new Date(startDate);
+            sweepStart.setDate(sweepStart.getDate() - 60);
+            for (let i = 0; i < 200; i++) {
+                let d = new Date(sweepStart);
+                d.setDate(sweepStart.getDate() + i);
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                let key = `${y}-${m}-${dayStr}`;
+                if (vacations[key]) delete vacations[key];
+            }
+
+            if (isNaN(numDays) || numDays <= 0) {
+                localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+                renderCalendar();
+                return;
+            }
+
+            for (let i = 0; i < numDays; i++) {
+                let d = new Date(startDate);
+                d.setDate(startDate.getDate() + i);
+                let y = d.getFullYear();
+                let m = String(d.getMonth() + 1).padStart(2, '0');
+                let dayStr = String(d.getDate()).padStart(2, '0');
+                let key = `${y}-${m}-${dayStr}`;
+
+                vacations[key] = true;
+                if (marks[key]) delete marks[key];
+            }
+
+            localStorage.setItem('minhaescala_vacations', JSON.stringify(vacations));
+            localStorage.setItem('minhaescala_marks', JSON.stringify(marks));
+            renderCalendar();
+        }
+
+        function editDayNote(dateKey) {
+            let notes = getSavedNotes();
+            let currentNote = notes[dateKey] || "";
+            let newNote = prompt("Digite sua anotação para o dia " + dateKey.split('-').reverse().join('/') + ":", currentNote);
+            
+            if (newNote !== null) {
+                if (newNote.trim() === "") {
+                    delete notes[dateKey];
+                } else {
+                    notes[dateKey] = newNote.trim();
+                }
+                localStorage.setItem('minhaescala_notes', JSON.stringify(notes));
+                renderCalendar();
+            }
+        }
+
+        function setView(viewType) {
+            currentView = viewType;
+            renderCalendar();
+        }
+
+        function getBaseYearMonth() {
+            let baseDateStr = document.getElementById('baseDate').value;
+            if (!baseDateStr) {
+                let now = new Date();
+                return { year: now.getFullYear(), month: now.getMonth() };
+            }
+            let parts = baseDateStr.split('-');
+            return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1 };
+        }
+
+        function getDayStatus(year, month, day) {
+            let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            let yearHolidays = getHolidaysForYear(year);
+            if (yearHolidays[dateKey]) {
+                return 'feriado';
+            }
+
+            let scaleType = document.getElementById('scaleType').value;
+            let baseDateStr = document.getElementById('baseDate').value;
+            if (scaleType === 'flex' || !baseDateStr) return '';
+
+            let currentDate = new Date(year, month, day);
+            let baseDate = new Date(baseDateStr + 'T00:00:00');
+            let diffTime = currentDate.getTime() - baseDate.getTime();
+            let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            if (scaleType === '12x36') {
+                let mod = diffDays % 2;
+                return (mod === 0 || mod === -0) ? 'plantao' : 'folga';
+            } else if (scaleType === '5x2') {
+                let dayOfWeek = currentDate.getDay();
+                return (dayOfWeek === 0 || dayOfWeek === 6) ? 'folga' : 'plantao';
+            } else if (scaleType === '2x2') {
+                let mod = ((diffDays % 4) + 4) % 4;
+                return (mod < 2) ? 'plantao' : 'folga';
+            } else if (scaleType === '24x48') {
+                let mod = ((diffDays % 3) + 3) % 3;
+                return (mod === 0) ? 'plantao' : 'folga';
+            } else if (scaleType === '24x72') {
+                let mod = ((diffDays % 4) + 4) % 4;
+                return (mod === 0) ? 'plantao' : 'folga';
+            }
+            return '';
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('app');
+            container.innerHTML = '';
+            let marks = getSavedMarks();
+            let vacations = getSavedVacations();
+            let notes = getSavedNotes();
+            let baseYM = getBaseYearMonth();
+
+            if (currentView === 'month') {
+                container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks, vacations, notes));
+            } else if (currentView === '6months') {
+                let y = baseYM.year;
+                let m = baseYM.month;
+                for (let i = 0; i < 6; i++) {
+                    let targetDate = new Date(y, m + i, 1);
+                    container.appendChild(createMonthElement(targetDate.getFullYear(), targetDate.getMonth(), marks, vacations, notes));
+                }
+            } else if (currentView === 'Ano Todo') {
+                let y = baseYM.year;
+                for (let m = 0; m < 12; m++) {
+                    container.appendChild(createMonthElement(y, m, marks, vacations, notes));
+                }
+            }
+        }
+
+        function createMonthElement(year, month, marks, vacations, notes) {
+            const wrapper = document.createElement('div');
+            
+            const title = document.createElement('h2');
+            title.innerText = `${monthNames[month]} de ${year}`;
+            wrapper.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'calendar-grid';
+
+            weekDays.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'weekday';
+                div.innerText = d;
+                grid.appendChild(div);
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day empty';
+                grid.appendChild(emptyDiv);
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day';
+                dayDiv.innerText = day;
+                
+                let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                let status = getDayStatus(year, month, day);
+                if (status) {
+                    dayDiv.classList.add(status);
+                }
+
+                if (marks[dateKey]) {
+                    dayDiv.classList.add('highlighted');
+                }
+
+                if (vacations[dateKey]) {
+                    dayDiv.classList.add('vacation');
+                }
+
+                if (notes[dateKey]) {
+                    dayDiv.classList.add('has-note');
+                    dayDiv.title = notes[dateKey];
+                }
+
+                dayDiv.onclick = function() {
+                    toggleDay(dateKey);
+                };
+
+                dayDiv.ondblclick = function() {
+                    handleDoubleClick(dateKey);
+                };
+
+                dayDiv.oncontextmenu = function(e) {
+                    e.preventDefault();
+                    editDayNote(dateKey);
+                };
+
+                grid.appendChild(dayDiv);
+            }
+
+            wrapper.appendChild(grid);
+
+            // Bloco da Legenda
+            const legend = document.createElement('div');
+            legend.className = 'legend-box';
+            legend.innerHTML = `
+                <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
+                <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Folga</div>
+                <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Feriado</div>
+                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Trab. (Amarelo)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#c084fc;"></div> Férias (Roxo)</div>
+            `;
+            wrapper.appendChild(legend);
+
+            // Coleta e exibe os feriados que caem neste mês específico (com formato correto DD/MM)
+            let yearHolidays = getHolidaysForYear(year);
+            let monthHolidays = [];
+            for (let d = 1; d <= totalDays; d++) {
+                let mmStr = String(month + 1).padStart(2, '0');
+                let ddStr = String(d).padStart(2, '0');
+                let k = `${year}-${mmStr}-${ddStr}`;
+                if (yearHolidays[k]) {
+                    monthHolidays.push(`${ddStr}/${mmStr} - ${yearHolidays[k]}`);
+                }
+            }
+
+            if (monthHolidays.length > 0) {
+                const holidayInfo = document.createElement('div');
+                holidayInfo.className = 'month-holidays';
+                holidayInfo.innerHTML = "<strong>Feriados do mês:</strong> " + monthHolidays.join(' &nbsp;|&nbsp; ');
+                wrapper.appendChild(holidayInfo);
+            }
+
+            return wrapper;
+        }
+    </script>
+</body>
+</html>
