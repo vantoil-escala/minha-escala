@@ -543,13 +543,15 @@
             `;
             wrapper.appendChild(legend);
 
-            // Coleta e exibe os feriados que caem neste mês específico
+            // Coleta e exibe os feriados que caem neste mês específico (com formato correto DD/MM)
             let yearHolidays = getHolidaysForYear(year);
             let monthHolidays = [];
             for (let d = 1; d <= totalDays; d++) {
-                let k = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let mmStr = String(month + 1).padStart(2, '0');
+                let ddStr = String(d).padStart(2, '0');
+                let k = `${year}-${mmStr}-${ddStr}`;
                 if (yearHolidays[k]) {
-                    monthHolidays.push(`${String(d).padStart(2, '0')}/0${month + 1 < 10 ? month + 1 : month + 1} - ${yearHolidays[k]}`);
+                    monthHolidays.push(`${ddStr}/${mmStr} - ${yearHolidays[k]}`);
                 }
             }
 
