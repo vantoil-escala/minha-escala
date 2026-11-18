@@ -62,6 +62,46 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        /* Estilo do Card de Alerta/Lembrete */
+        .alert-card {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #3b82f6;
+            border-left: 5px solid #1d4ed8;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: #1e3a8a;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .alert-close {
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e40af;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .alert-close:hover {
+            color: #b91c1c;
+            background: transparent;
+            box-shadow: none;
+        }
+        .alert-body {
+            font-size: 13px;
+            color: #334155;
+            font-weight: bold;
+        }
         h2 {
             text-align: center;
             color: #1e293b;
@@ -211,6 +251,7 @@
         const weekDays = ["D", "S", "T", "Q", "Q", "S", "S"];
         
         let currentView = 'month';
+        let alertDismissed = false; // Controla o botão X por sessão
 
         // Função para calcular os feriados (Fixos e Móveis por ano dinamicamente)
         function getHolidaysForYear(year) {
@@ -388,6 +429,7 @@
 
         function setView(viewType) {
             currentView = viewType;
+            alertDismissed = false; // Reseta o X ao trocar de aba de visualização
             renderCalendar();
         }
 
@@ -437,6 +479,28 @@
             return '';
         }
 
+        // Função para encontrar o compromisso mais próximo (amarelo) a partir de hoje
+        function getNearestAlert(marks) {
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            
+            let nearestKey = null;
+            let minDiff = Infinity;
+
+            for (let dateKey in marks) {
+                if (marks[dateKey]) {
+                    let d = new Date(dateKey + 'T00:00:00');
+                    let diff = d.getTime() - today.getTime();
+                    // Considera dias iguais ou futuros que estão marcados de amarelo
+                    if (diff >= 0 && diff < minDiff) {
+                        minDiff = diff;
+                        nearestKey = dateKey;
+                    }
+                }
+            }
+            return nearestKey;
+        }
+
         function renderCalendar() {
             const container = document.getElementById('app');
             container.innerHTML = '';
@@ -444,6 +508,29 @@
             let vacations = getSavedVacations();
             let notes = getSavedNotes();
             let baseYM = getBaseYearMonth();
+
+            // Renderiza o painel de aviso inteligente no topo se houver compromisso amarelo ativo e o usuário não tiver fechado com o X
+            if (!alertDismissed) {
+                let nearestKey = getNearestAlert(marks);
+                if (nearestKey) {
+                    let parts = nearestKey.split('-');
+                    let formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    let noteText = notes[nearestKey] ? ` - "${notes[nearestKey]}"` : "";
+
+                    const alertCard = document.createElement('div');
+                    alertCard.className = 'alert-card';
+                    alertCard.innerHTML = `
+                        <div class="alert-header">
+                            <span>🔔 AVISO / LEMBRETE</span>
+                            <button class="alert-close" onclick="dismissAlert()" title="Fechar aviso">×</button>
+                        </div>
+                        <div class="alert-body">
+                            Próximo compromisso em destaque: <strong>${formattedDate}</strong>${noteText}
+                        </div>
+                    `;
+                    container.appendChild(alertCard);
+                }
+            }
 
             if (currentView === 'month') {
                 container.appendChild(createMonthElement(baseYM.year, baseYM.month, marks, vacations, notes));
@@ -460,6 +547,11 @@
                     container.appendChild(createMonthElement(y, m, marks, vacations, notes));
                 }
             }
+        }
+
+        function dismissAlert() {
+            alertDismissed = true;
+            renderCalendar();
         }
 
         function createMonthElement(year, month, marks, vacations, notes) {
@@ -538,29 +630,10 @@
                 <div class="legend-item"><div class="legend-color" style="background:#dbeafe;"></div> Plantão</div>
                 <div class="legend-item"><div class="legend-color" style="background:#d1fae5;"></div> Folga</div>
                 <div class="legend-item"><div class="legend-color" style="background:#fee2e2;"></div> Feriado</div>
-                <div class="legend-item"><div class="legend-color" style="background:#facc15;"></div> Trab. (Amarelo)</div>
-                <div class="legend-item"><div class="legend-color" style="background:#c084fc;"></div> Férias (Roxo)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#facc15; border-color:#ca8a04;"></div> Trab. (Amarelo)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#c084fc; border-color:#9333ea;"></div> Férias (Roxo)</div>
             `;
             wrapper.appendChild(legend);
-
-            // Coleta e exibe os feriados que caem neste mês específico (com formato correto DD/MM)
-            let yearHolidays = getHolidaysForYear(year);
-            let monthHolidays = [];
-            for (let d = 1; d <= totalDays; d++) {
-                let mmStr = String(month + 1).padStart(2, '0');
-                let ddStr = String(d).padStart(2, '0');
-                let k = `${year}-${mmStr}-${ddStr}`;
-                if (yearHolidays[k]) {
-                    monthHolidays.push(`${ddStr}/${mmStr} - ${yearHolidays[k]}`);
-                }
-            }
-
-            if (monthHolidays.length > 0) {
-                const holidayInfo = document.createElement('div');
-                holidayInfo.className = 'month-holidays';
-                holidayInfo.innerHTML = "<strong>Feriados do mês:</strong> " + monthHolidays.join(' &nbsp;|&nbsp; ');
-                wrapper.appendChild(holidayInfo);
-            }
 
             return wrapper;
         }
