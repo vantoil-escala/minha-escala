@@ -62,6 +62,12 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .month-block {
+            margin-bottom: 24px;
+        }
+        .month-block:last-child {
+            margin-bottom: 0;
+        }
         /* Estilo do Card de Alerta/Lembrete */
         .alert-card {
             background: linear-gradient(135deg, #eff6ff, #dbeafe);
@@ -508,6 +514,34 @@
             return nearestKey;
         }
 
+        function createLegendElement() {
+            const legend = document.createElement('div');
+            legend.className = 'legend-box';
+            legend.innerHTML = `
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #dbeafe; border-color: #93c5fd;"></span>
+                    <span>Plantão</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #d1fae5; border-color: #6ee7b7;"></span>
+                    <span>Folga</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #fee2e2; border-color: #fca5a5;"></span>
+                    <span>Feriado</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #facc15; border-color: #ca8a04; border-width: 2px;"></span>
+                    <span>Anotação</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #c084fc; border-color: #9333ea; border-width: 2px;"></span>
+                    <span>Férias</span>
+                </div>
+            `;
+            return legend;
+        }
+
         function createMonthElement(year, month, marks, vacations, notes) {
             const monthDiv = document.createElement('div');
             monthDiv.className = 'month-block';
@@ -563,7 +597,6 @@
                     dayCell.title = notes[dateKey];
                 }
 
-                // Clique simples alterna marcação amarela; clique duplo define férias; botão direito/segurar ou duplo clique? Mantém lógica existente
                 dayCell.addEventListener('click', () => toggleDay(dateKey));
                 dayCell.addEventListener('dblclick', (e) => {
                     e.preventDefault();
@@ -585,6 +618,9 @@
                 holidayBox.textContent = "Feriados: " + monthHolidayList.join(" • ");
                 monthDiv.appendChild(holidayBox);
             }
+
+            // Legenda exibida embaixo de cada mês
+            monthDiv.appendChild(createLegendElement());
 
             return monthDiv;
         }
@@ -634,33 +670,6 @@
                     container.appendChild(createMonthElement(baseYM.year, m, marks, vacations, notes));
                 }
             }
-
-            // Legenda atualizada com quadrados uniformes e rótulos limpos
-            const legend = document.createElement('div');
-            legend.className = 'legend-box';
-            legend.innerHTML = `
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #dbeafe; border-color: #93c5fd;"></span>
-                    <span>Plantão</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #d1fae5; border-color: #6ee7b7;"></span>
-                    <span>Folga</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #fee2e2; border-color: #fca5a5;"></span>
-                    <span>Feriado</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #facc15; border-color: #ca8a04; border-width: 2px;"></span>
-                    <span>Anotação</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #c084fc; border-color: #9333ea; border-width: 2px;"></span>
-                    <span>Férias</span>
-                </div>
-            `;
-            container.appendChild(legend);
         }
     </script>
 </body>
